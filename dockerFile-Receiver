@@ -1,0 +1,11 @@
+# Python Image
+FROM python:latest
+# put files to directory
+ADD Receiver.py /receiver/
+# '/receiver/' as base
+WORKDIR /receiver/
+# Expose port 9898
+EXPOSE 9898
+CMD sudo apt-get install python-crypto
+# exec
+CMD [ "python3", "/receiver/Receiver.py" ]

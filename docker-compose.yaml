@@ -1,0 +1,13 @@
+version: '3.3'
+
+services:
+  serviceSender:
+    build:
+      dockerfile:
+    ports:
+
+
+  serviceReceiver:
+    build:
+      dockerfile:
+    ports:

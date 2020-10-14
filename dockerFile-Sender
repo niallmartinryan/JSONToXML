@@ -1,0 +1,12 @@
+# Python Image
+FROM python:latest
+# put files to directory
+ADD Sender.py /sender/
+# '/sender/' as base
+WORKDIR /sender/
+# Expose port 9898 in the container
+EXPOSE 9898
+# execute the command + dependency
+CMD pip3 install dicttoxml
+CMD sudo apt-get install python-crypto
+CMD [ "python3", "/sender/Sender.py" ]
