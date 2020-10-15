@@ -42,9 +42,9 @@ with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
     while True:
         # wait for data to be received
         transferredMessage = s.recv(1024).decode('utf-8')
-        newData = transferredMessage.replace("\r\n", '')                        # remove new line char
+        alteredMessage = transferredMessage.replace("\r\n", '')                        # remove new line char
 
-        if newData == "Client: OK":
+        if alteredMessage == "Client: OK":
             pubKeyString = "public_key=" + public_key.exportKey().decode('utf-8') + "\r"
             s.send(pubKeyString.encode('utf8'))
             print("Public key sent")
@@ -69,7 +69,7 @@ with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
             print("SecretFile :" + str(secretFile))                             # print to console for visuals
             s.send("Server: OK".encode('utf-8'))                                # send confirmation of decryption
 
-        elif newData == "Quit": break
+        elif alteredMessage == "Quit": break
 
     s.send("Server stopped\n".encode('utf-8'))
     print ("Server stopped")
