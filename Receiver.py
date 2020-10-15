@@ -6,57 +6,71 @@ import ast
 import random
 import socket
 import pickle
+import base64
 
-random_generator = Random.new().read
+from Crypto.Cipher import AES
+#
+#   Decrypt AES file
+#
+def decrypt( enc, key):
+    enc = base64.b64decode(enc)
+    iv = enc[:AES.block_size]
+    cipher = AES.new(key, AES.MODE_CBC, iv)
+    return unpad(cipher.decrypt(enc[AES.block_size:])).decode('utf-8')
+#
+#   Unpad raw file
+#
+def unpad(s):
+    return s[:-ord(s[len(s)-1:])]
+
+
+random_generator = Random.new().read                                            # Generate Keys Public Private key pair for swap
 private_key = RSA.generate(1024, random_generator)
 public_key = private_key.publickey()
 
+# declarations
+xmlFile = "DecryptedXMLFile.xml"
 encrypt_str = "encrypted_message="
 from codecs import open
+
+# need to edit these within the containers as they have different host
 HOST = '127.0.0.1'  
 PORT = 9897
 
-
-
 with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
     s.connect((HOST, PORT))
-    # s.sendall('Hello, world. IPC success!')
-
     while True:
-    	# wait for data to be received
-    	originalData = s.recv(1024).decode('utf-8')
-    	copy = originalData
-    	newData = originalData.replace("\r\n", '')  # remove new line char
+        # wait for data to be received
+        transferredMessage = s.recv(1024).decode('utf-8')
+        newData = transferredMessage.replace("\r\n", '')                        # remove new line char
 
-    	if newData == "Client: OK":
-    		pubKeyString = "public_key=" + public_key.exportKey().decode('utf-8') + "\r"
-    		s.send(pubKeyString.encode('utf8'))
-    		print("Public key sent")
-
-    	elif encrypt_str in copy:	# encrypted message is received
-    		copy = copy.replace(encrypt_str, '')
-    		print("Received:\nEncrypted message = "+str(copy))
+        if newData == "Client: OK":
+            pubKeyString = "public_key=" + public_key.exportKey().decode('utf-8') + "\r"
+            s.send(pubKeyString.encode('utf8'))
+            print("Public key sent")
 
 
-    		encrypted = eval(str(copy))
-    		decrypted = private_key.decrypt(encrypted)
-    		# f = open('DecryptedReceiverFile', 'wb')
-    		# f.write(decrypted)
-    		# f.close()
+        elif encrypt_str in transferredMessage:                                 # encrypted message is received
+            
+            transferredMessage = transferredMessage.replace(encrypt_str, '')    # removing starting encryption string
+            print("Received:\nEncrypted message = "+str(transferredMessage))
 
-    		print("Decrypted message = " + str(decrypted))
-    		print("Decrypted message = " + decrypted.decode('utf-8', 'ignore'))
-    		print("Decrypted and decoded = " + str(decrypted) +"\n")
-    		# print(pickle.loads(decrypted))
-    		s.send("Server: OK".encode('utf-8'))
+            encrypted = eval(str(transferredMessage))                           # evaluate
+            decryptedPassKey = private_key.decrypt(encrypted)                   # decrypt the passKey
 
+            print("Decrypted message = " + str(decryptedPassKey))               
+            cipherFile = s.recv(1024)                                           # receive the AES encrypted file
+            secretFile = decrypt(cipherFile,decryptedPassKey)                   # decrypt the file with the passKey
 
+            with open(xmlFile,  "wb", encoding="utf-8") as file:                # Write secret XMLfile which is decrypted
+                file.write(secretFile)
+            file.close()
 
-    		
+            print("SecretFile :" + str(secretFile))                             # print to console for visuals
+            s.send("Server: OK".encode('utf-8'))                                # send confirmation of decryption
 
-    	elif newData == "Quit": break
+        elif newData == "Quit": break
 
     s.send("Server stopped\n".encode('utf-8'))
     print ("Server stopped")
-    # f.close()
     s.close()
